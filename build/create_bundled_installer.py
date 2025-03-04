@@ -19,6 +19,8 @@ import tempfile
 import argparse
 import subprocess
 import logging
+import base64
+import platform
 from pathlib import Path
 from datetime import datetime
 
@@ -225,62 +227,80 @@ if __name__ == "__main__":
         shutil.copy2(scrm_path, scrm_temp)
         shutil.copy2(sdk_path, sdk_temp)
         
-        # Create self-extracting archive using 7-Zip
-        try:
-            # Check if 7-Zip is installed
-            subprocess.run(["7z", "--help"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-            
-            # Create 7z archive
-            archive_path = temp_dir / "installer.7z"
-            subprocess.run(["7z", "a", str(archive_path), f"{temp_dir}/*"], check=True)
-            
-            # Create self-extracting config
-            sfx_config = temp_dir / "config.txt"
-            with open(sfx_config, 'w') as f:
-                f.write('''
+        # Create self-extracting archive using 7-Zip if on Windows
+        if platform.system() == "Windows":
+            try:
+                # Check if 7-Zip is installed
+                try:
+                    subprocess.run(["7z", "--help"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+                    has_7zip = True
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    has_7zip = False
+                
+                if has_7zip:
+                    # Create 7z archive
+                    archive_path = temp_dir / "installer.7z"
+                    subprocess.run(["7z", "a", str(archive_path), f"{temp_dir}/*"], check=True)
+                    
+                    # Create self-extracting config
+                    sfx_config = temp_dir / "config.txt"
+                    with open(sfx_config, 'w') as f:
+                        f.write('''
 ;!@Install@!UTF-8!
 Title="SCRM Champion with Windows SDK Installer"
 BeginPrompt="Do you want to install SCRM Champion with Windows SDK?"
 RunProgram="run_installer.bat"
 ;!@InstallEnd@!
 ''')
+                    
+                    # Create self-extracting executable
+                    subprocess.run(["copy", "/b", "7zS.sfx", "+", str(sfx_config), "+", str(archive_path), str(output_path)], check=True)
+                    logger.info(f"Created self-extracting installer: {output_path}")
+                    return output_path
+            except Exception as e:
+                logger.warning(f"Error creating self-extracting archive: {e}")
+        
+        # If 7-Zip method failed or not on Windows, create simple bundled installer
+        logger.info("Creating simple bundled installer")
+        
+        # Create simple bundled installer
+        with open(output_path, 'wb') as outfile:
+            # Write a simple header
+            outfile.write(b"#!/usr/bin/env python3\n")
+            outfile.write(b"# SCRM Champion with Windows SDK Bundled Installer\n")
+            outfile.write(b"# This is a self-extracting Python script\n\n")
             
-            # Create self-extracting executable
-            subprocess.run(["copy", "/b", "7zS.sfx", "+", str(sfx_config), "+", str(archive_path), str(output_path)], check=True)
-            logger.info(f"Created self-extracting installer: {output_path}")
+            # Add imports
+            outfile.write(b"import os\n")
+            outfile.write(b"import sys\n")
+            outfile.write(b"import shutil\n")
+            outfile.write(b"import tempfile\n")
+            outfile.write(b"import subprocess\n")
+            outfile.write(b"import logging\n")
+            outfile.write(b"import base64\n")
+            outfile.write(b"from pathlib import Path\n\n")
             
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            logger.warning("7-Zip not found, creating simple bundled installer")
+            # Write the Python script
+            with open(installer_script, 'rb') as f:
+                outfile.write(f.read())
             
-            # Create simple bundled installer
-            with open(output_path, 'wb') as outfile:
-                # Write a simple header
-                outfile.write(b"#!/usr/bin/env python3\n")
-                outfile.write(b"# SCRM Champion with Windows SDK Bundled Installer\n")
-                outfile.write(b"# This is a self-extracting Python script\n\n")
-                
-                # Write the Python script
-                with open(installer_script, 'rb') as f:
-                    outfile.write(f.read())
-                
-                # Write the installers as base64-encoded data
-                outfile.write(b"\n\n# Bundled installers\n")
-                outfile.write(b"import base64\n")
-                
-                # Write SCRM Champion installer
-                outfile.write(b"SCRM_CHAMPION_INSTALLER = base64.b64decode('''\n")
-                with open(scrm_path, 'rb') as f:
-                    outfile.write(base64.b64encode(f.read()))
-                outfile.write(b"''')\n\n")
-                
-                # Write Windows SDK installer
-                outfile.write(b"WINDOWS_SDK_INSTALLER = base64.b64decode('''\n")
-                with open(sdk_path, 'rb') as f:
-                    outfile.write(base64.b64encode(f.read()))
-                outfile.write(b"''')\n\n")
-                
-                # Write extraction code
-                outfile.write(b"""
+            # Write the installers as base64-encoded data
+            outfile.write(b"\n\n# Bundled installers\n")
+            
+            # Write SCRM Champion installer
+            outfile.write(b"SCRM_CHAMPION_INSTALLER = base64.b64decode('''\n")
+            with open(scrm_path, 'rb') as f:
+                outfile.write(base64.b64encode(f.read()))
+            outfile.write(b"''')\n\n")
+            
+            # Write Windows SDK installer
+            outfile.write(b"WINDOWS_SDK_INSTALLER = base64.b64decode('''\n")
+            with open(sdk_path, 'rb') as f:
+                outfile.write(base64.b64encode(f.read()))
+            outfile.write(b"''')\n\n")
+            
+            # Write extraction code
+            outfile.write(b"""
 # Extract installers
 def extract_installers():
     script_dir = Path(__file__).parent.resolve()
