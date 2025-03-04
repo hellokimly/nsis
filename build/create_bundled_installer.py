@@ -109,7 +109,7 @@ def create_python_bundler(scrm_path, sdk_path, output_path):
         # Create silent_installer.py in temp directory
         installer_script = temp_dir / "silent_installer.py"
         with open(installer_script, 'w') as f:
-            f.write("""#!/usr/bin/env python3
+            f.write('''#!/usr/bin/env python3
 import os
 import sys
 import shutil
@@ -212,7 +212,7 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-""")
+''')
         
         # Create batch file
         batch_file = temp_dir / "run_installer.bat"
@@ -237,13 +237,13 @@ if __name__ == "__main__":
             # Create self-extracting config
             sfx_config = temp_dir / "config.txt"
             with open(sfx_config, 'w') as f:
-                f.write(f"""
+                f.write('''
 ;!@Install@!UTF-8!
 Title="SCRM Champion with Windows SDK Installer"
 BeginPrompt="Do you want to install SCRM Champion with Windows SDK?"
 RunProgram="run_installer.bat"
 ;!@InstallEnd@!
-""")
+''')
             
             # Create self-extracting executable
             subprocess.run(["copy", "/b", "7zS.sfx", "+", str(sfx_config), "+", str(archive_path), str(output_path)], check=True)
