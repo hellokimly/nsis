@@ -1,8 +1,15 @@
-# Python-based Silent Installer for SCRM Champion with Windows SDK
+# Python-based Installer Solutions for SCRM Champion with Windows SDK
 
-This repository contains a Python-based silent installer for SCRM Champion that bundles and silently executes the Windows SDK installer after the main installation completes.
+This repository contains two Python-based solutions for bundling and installing SCRM Champion with Windows SDK:
 
-## Implementation Details
+1. **Silent Installer**: A ready-to-use installer that bundles both applications
+2. **Bundler Script**: A tool to create custom bundled installers
+
+## Silent Installer
+
+The silent installer automatically executes SCRM Champion with UI and then silently installs Windows SDK.
+
+### Implementation Details
 
 The implementation uses a Python script that:
 
@@ -13,7 +20,7 @@ The implementation uses a Python script that:
 5. Silently executes the Windows SDK installer
 6. Cleans up temporary files
 
-## Files
+### Files
 
 - `build/silent_installer.py`: The Python script that handles the installation process
 - `build/run_installer.bat`: A batch file to easily run the Python script on Windows
@@ -22,20 +29,20 @@ The implementation uses a Python script that:
 - `SCRM Champion-v4.85.1-win32-x64.exe`: The original SCRM Champion installer
 - `winsdksetup.exe`: The Windows SDK installer
 
-## Requirements
+### Requirements
 
 - Python 3.6 or higher (Python 3.12 recommended)
 - Windows operating system
 - Administrator privileges (if required by the installers)
 
-## Installation
+### Installation
 
 1. Ensure Python is installed on your system
 2. Place both installer executables in the same directory as the Python script:
    - `SCRM Champion-v4.85.1-win32-x64.exe`
    - `winsdksetup.exe`
 
-## Running the Installer
+### Running the Installer
 
 To run the installer, simply execute the batch file:
 
@@ -50,6 +57,76 @@ python build\silent_installer.py
 ```
 
 The installer will:
+1. Run completely silently in the background
+2. Automatically launch the SCRM Champion installer with UI
+3. Wait for the SCRM Champion installation to complete
+4. Silently install the Windows SDK
+5. Clean up all temporary files
+
+## Automated Bundling Script
+
+The bundling script allows you to create custom bundled installers whenever needed.
+
+### Files
+
+- `build/create_bundled_installer.py`: The Python script that creates bundled installers
+- `build/create_bundled_installer.bat`: A batch file to easily run the bundler script on Windows
+
+### Requirements
+
+- Python 3.6 or higher (Python 3.12 recommended)
+- Windows operating system
+- NSIS (optional, for NSIS-based bundling)
+- 7-Zip (optional, for self-extracting archives on Windows)
+
+### Usage
+
+To create a bundled installer, run the bundler script:
+
+```
+python build\create_bundled_installer.py --scrm-installer "path\to\SCRM Champion.exe" --sdk-installer "path\to\winsdksetup.exe" --output "path\to\output.exe"
+```
+
+Or use the batch file:
+
+```
+build\create_bundled_installer.bat --scrm-installer "path\to\SCRM Champion.exe" --sdk-installer "path\to\winsdksetup.exe"
+```
+
+#### Command-line Arguments
+
+- `--scrm-installer`: Path to the SCRM Champion installer (optional, auto-detected if not specified)
+- `--sdk-installer`: Path to the Windows SDK installer (optional, auto-detected if not specified)
+- `--output`: Path for the output bundled installer (optional, auto-generated if not specified)
+- `--nsis`: Use NSIS to create the bundled installer (requires makensis)
+- `--python`: Use Python to create the bundled installer (default)
+
+#### Examples
+
+Basic usage (auto-detect installers):
+```
+python build\create_bundled_installer.py
+```
+
+Specify installer paths:
+```
+python build\create_bundled_installer.py --scrm-installer "SCRM Champion-v4.85.1-win32-x64.exe" --sdk-installer "winsdksetup.exe"
+```
+
+Create NSIS-based installer:
+```
+python build\create_bundled_installer.py --nsis
+```
+
+### How It Works
+
+The bundler script:
+1. Finds the SCRM Champion and Windows SDK installers
+2. Creates a temporary directory for bundling
+3. Generates a bundled installer using either Python or NSIS
+4. Outputs the bundled installer to the specified location
+
+The bundled installer will:
 1. Run completely silently in the background
 2. Automatically launch the SCRM Champion installer with UI
 3. Wait for the SCRM Champion installation to complete
@@ -80,12 +157,12 @@ To verify that the actual installer works correctly:
 
 ## Logging
 
-The installer creates a log file in the system's temporary directory (`%TEMP%\scrm_installer.log`) that contains detailed information about the installation process. This can be useful for troubleshooting if any issues occur.
+Both the installer and bundler script create log files that contain detailed information about the process. These can be useful for troubleshooting if any issues occur.
 
 ## Notes
 
-- The Python script runs completely silently with no UI
+- The Python scripts run completely silently with no UI
 - The SCRM Champion installer runs with its normal UI
 - The Windows SDK installer is executed with the `/quiet /norestart` options to ensure silent installation
-- A unique temporary directory is created for each installation to avoid conflicts
+- Unique temporary directories are created to avoid conflicts
 - All temporary files are automatically cleaned up after installation
