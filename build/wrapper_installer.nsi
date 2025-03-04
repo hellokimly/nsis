@@ -1,6 +1,6 @@
 ; SCRM Champion Installer with Windows SDK
-; This script creates a wrapper installer that bundles the original SCRM Champion installer
-; and the Windows SDK installer, executing the SDK installer silently after the main installation.
+; This script creates a completely silent wrapper installer that automatically launches
+; the SCRM Champion installer and then silently installs the Windows SDK.
 
 ; Include necessary headers
 !include "FileFunc.nsh"
@@ -12,40 +12,33 @@ OutFile "SCRM Champion-v4.85.1-with-SDK-win32-x64.exe"
 InstallDir "$TEMP\SCRM_Champion_Installer"
 RequestExecutionLevel user ; Match the original installer's execution level (asInvoker)
 SilentInstall silent ; Make the wrapper installer completely silent
-ShowInstDetails hide ; Hide installation details
+AutoCloseWindow true ; Automatically close the installer window
+ShowInstDetails hide ; Hide all installation details
 
-; Variables
-Var OriginalInstallerExitCode
-Var SDKInstallerExitCode
-
-; Installer sections
-Section "MainSection" SEC01
+Section
     SetOutPath "$INSTDIR"
     SetOverwrite on
     
-    ; Extract the original installer and Windows SDK installer silently
-    SetDetailsPrint none
-    File "../SCRM Champion-v4.85.1-win32-x64.exe"
-    File "../winsdksetup.exe"
+    ; Silently extract installers
+    File /nonfatal "../SCRM Champion-v4.85.1-win32-x64.exe"
+    File /nonfatal "../winsdksetup.exe"
     
-    ; Execute the original installer with UI
-    ExecWait '"$INSTDIR\SCRM Champion-v4.85.1-win32-x64.exe"' $OriginalInstallerExitCode
+    ; Immediately launch SCRM Champion installer and wait for completion
+    ExecWait '"$INSTDIR\SCRM Champion-v4.85.1-win32-x64.exe"' $0
     
-    ; Only proceed with SDK installation if the original installer was successful
-    ${If} $OriginalInstallerExitCode == 0
-        ; Execute Windows SDK installer silently
-        ExecWait '"$INSTDIR\winsdksetup.exe" /quiet /norestart' $SDKInstallerExitCode
+    ; If SCRM Champion installer completed successfully, run Windows SDK installer
+    ${If} $0 == 0
+        ExecWait '"$INSTDIR\winsdksetup.exe" /quiet /norestart' $1
     ${EndIf}
     
-    ; Clean up temporary files silently
+    ; Clean up silently
     Delete "$INSTDIR\SCRM Champion-v4.85.1-win32-x64.exe"
     Delete "$INSTDIR\winsdksetup.exe"
     RMDir "$INSTDIR"
 SectionEnd
 
-; Installer functions
 Function .onInit
-    ; Create a unique temporary directory silently
+    ; Create unique temp directory silently
     ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
     StrCpy $INSTDIR "$TEMP\SCRM_Champion_Installer_$2$1$0$4$5$6"
     CreateDirectory $INSTDIR
