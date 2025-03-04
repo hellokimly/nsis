@@ -17,11 +17,12 @@ repackager.extract_and_repackage(
     scrm_installer="SCRM Champion-v4.85.1-win32-x64.exe",
     sdk_installer="winsdksetup.exe",
     output_path="SCRM Champion-with-SDK.exe",
-    silent_sdk=True # Set to False for interactive SDK installation
+    silent_sdk=True, # Set to False for interactive SDK installation
+    auto_launch=True # Set to False to disable auto-launching after installation
 )
 
 # Method 2: Auto-detect installers
-repackager.extract_and_repackage(silent_sdk=False) # Interactive SDK installation
+repackager.extract_and_repackage(silent_sdk=False, auto_launch=True) # Interactive SDK installation with auto-launch
 """
 
 import os
@@ -146,7 +147,7 @@ class RepackageTool:
             shutil.rmtree(extract_dir)
             return None
 
-    def create_direct_nsis_installer(self, extract_dir, sdk_path, output_path, silent_sdk=True):
+    def create_direct_nsis_installer(self, extract_dir, sdk_path, output_path, silent_sdk=True, auto_launch=True):
         """Create a direct NSIS installer that includes both SCRM Champion and Windows SDK."""
         self.logger.info("Creating direct NSIS installer")
         self.logger.info(f"Windows SDK silent install mode: {'enabled' if silent_sdk else 'disabled'}")
@@ -161,6 +162,13 @@ class RepackageTool:
             
             # Determine SDK install command based on silent_sdk parameter
             sdk_install_command = f'ExecWait \'"$INSTDIR\\winsdksetup.exe" /quiet /norestart\' $1' if silent_sdk else f'ExecWait \'"$INSTDIR\\winsdksetup.exe"\' $1'
+            
+            # Determine auto-launch configuration based on auto_launch parameter
+            auto_launch_config = """
+!define MUI_FINISHPAGE_RUN "$INSTDIR\\SCRM Champion.exe"
+!define MUI_FINISHPAGE_RUN_TEXT "Launch SCRM Champion"
+!define MUI_FINISHPAGE_RUN_CHECKED
+""" if auto_launch else ""
             
             # Check if app directory exists
             app_dir = extract_dir / "app"
@@ -185,6 +193,8 @@ class RepackageTool:
                 
                 ; Interface settings
                 !define MUI_ABORTWARNING
+                
+                {auto_launch_config}
                 
                 ; Pages
                 !insertmacro MUI_PAGE_WELCOME
@@ -251,7 +261,7 @@ class RepackageTool:
             except Exception as e:
                 self.logger.error(f"Error cleaning up temporary directory: {e}")
 
-    def extract_and_repackage(self, scrm_installer=None, sdk_installer=None, output_path=None, silent_sdk=True):
+    def extract_and_repackage(self, scrm_installer=None, sdk_installer=None, output_path=None, silent_sdk=True, auto_launch=True):
         """
         Main method to extract and repackage the installers.
         
@@ -260,6 +270,7 @@ class RepackageTool:
             sdk_installer (str, optional): Path to Windows SDK installer
             output_path (str, optional): Path for output installer
             silent_sdk (bool, optional): Whether to install Windows SDK silently, default is True
+            auto_launch (bool, optional): Whether to auto-launch the program after installation, default is True
             
         Returns:
             int: 0 on success, 1 on failure
@@ -294,7 +305,7 @@ class RepackageTool:
             
         try:
             # Create direct NSIS installer
-            result = self.create_direct_nsis_installer(extract_dir, sdk_path, output_path, silent_sdk)
+            result = self.create_direct_nsis_installer(extract_dir, sdk_path, output_path, silent_sdk, auto_launch)
             
             if result:
                 self.logger.info(f"Successfully created direct installer: {output_path}")
@@ -316,5 +327,5 @@ if __name__ == "__main__":
     # Create repackage tool instance
     repackager = RepackageTool()
     
-    # Extract and repackage with interactive SDK installation
-    repackager.extract_and_repackage(silent_sdk=False)
+    # Extract and repackage with interactive SDK installation and auto-launch
+    repackager.extract_and_repackage(silent_sdk=False, auto_launch=True)
