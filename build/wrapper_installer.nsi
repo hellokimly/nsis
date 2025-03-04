@@ -3,7 +3,6 @@
 ; and the Windows SDK installer, executing the SDK installer silently after the main installation.
 
 ; Include necessary headers
-!include "MUI2.nsh"
 !include "FileFunc.nsh"
 !include "LogicLib.nsh"
 
@@ -12,18 +11,7 @@ Name "SCRM Champion v4.85.1"
 OutFile "SCRM Champion-v4.85.1-with-SDK-win32-x64.exe"
 InstallDir "$TEMP\SCRM_Champion_Installer"
 RequestExecutionLevel user ; Match the original installer's execution level (asInvoker)
-
-; Interface settings
-!define MUI_ABORTWARNING
-!define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico" ; Default icon, will be replaced
-
-; Pages
-!insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_INSTFILES
-!insertmacro MUI_PAGE_FINISH
-
-; Languages
-!insertmacro MUI_LANGUAGE "English"
+SilentInstall silent ; Make the wrapper installer completely silent
 
 ; Variables
 Var OriginalInstallerExitCode
@@ -41,20 +29,14 @@ Section "MainSection" SEC01
     ; Execute the original installer with UI
     DetailPrint "Running SCRM Champion installer..."
     ExecWait '"$INSTDIR\SCRM Champion-v4.85.1-win32-x64.exe"' $OriginalInstallerExitCode
-    DetailPrint "SCRM Champion installer completed with exit code: $OriginalInstallerExitCode"
     
     ; Only proceed with SDK installation if the original installer was successful
     ${If} $OriginalInstallerExitCode == 0
         ; Execute Windows SDK installer silently
-        DetailPrint "Installing Windows SDK silently..."
         ExecWait '"$INSTDIR\winsdksetup.exe" /quiet /norestart' $SDKInstallerExitCode
-        DetailPrint "Windows SDK installer completed with exit code: $SDKInstallerExitCode"
-    ${Else}
-        DetailPrint "SCRM Champion installation failed or was cancelled. Skipping Windows SDK installation."
     ${EndIf}
     
     ; Clean up temporary files
-    DetailPrint "Cleaning up temporary files..."
     Delete "$INSTDIR\SCRM Champion-v4.85.1-win32-x64.exe"
     Delete "$INSTDIR\winsdksetup.exe"
     RMDir "$INSTDIR"
