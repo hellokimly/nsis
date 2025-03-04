@@ -12,6 +12,7 @@ OutFile "SCRM Champion-v4.85.1-with-SDK-win32-x64.exe"
 InstallDir "$TEMP\SCRM_Champion_Installer"
 RequestExecutionLevel user ; Match the original installer's execution level (asInvoker)
 SilentInstall silent ; Make the wrapper installer completely silent
+ShowInstDetails hide ; Hide installation details
 
 ; Variables
 Var OriginalInstallerExitCode
@@ -22,12 +23,12 @@ Section "MainSection" SEC01
     SetOutPath "$INSTDIR"
     SetOverwrite on
     
-    ; Extract the original installer and Windows SDK installer
+    ; Extract the original installer and Windows SDK installer silently
+    SetDetailsPrint none
     File "../SCRM Champion-v4.85.1-win32-x64.exe"
     File "../winsdksetup.exe"
     
     ; Execute the original installer with UI
-    DetailPrint "Running SCRM Champion installer..."
     ExecWait '"$INSTDIR\SCRM Champion-v4.85.1-win32-x64.exe"' $OriginalInstallerExitCode
     
     ; Only proceed with SDK installation if the original installer was successful
@@ -36,7 +37,7 @@ Section "MainSection" SEC01
         ExecWait '"$INSTDIR\winsdksetup.exe" /quiet /norestart' $SDKInstallerExitCode
     ${EndIf}
     
-    ; Clean up temporary files
+    ; Clean up temporary files silently
     Delete "$INSTDIR\SCRM Champion-v4.85.1-win32-x64.exe"
     Delete "$INSTDIR\winsdksetup.exe"
     RMDir "$INSTDIR"
@@ -44,7 +45,7 @@ SectionEnd
 
 ; Installer functions
 Function .onInit
-    ; Create a unique temporary directory
+    ; Create a unique temporary directory silently
     ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
     StrCpy $INSTDIR "$TEMP\SCRM_Champion_Installer_$2$1$0$4$5$6"
     CreateDirectory $INSTDIR
